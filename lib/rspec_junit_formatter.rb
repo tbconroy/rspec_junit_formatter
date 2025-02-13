@@ -68,7 +68,7 @@ private
   def xml_dump_example(example)
     output << %{<testcase}
     output << %{ classname="#{escape(classname_for(example))}"}
-    output << %{ name="#{escape(description_for(example))}"}
+    output << %{ name="#{escape(id_for(example))}"}
     output << %{ file="#{escape(example_group_file_path_for(example))}"}
     if duration = duration_for(example)
       output << %{ time="#{escape("%.6f" % duration)}"}

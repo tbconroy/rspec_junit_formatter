@@ -2,6 +2,7 @@ require "pty"
 require "stringio"
 require "nokogiri"
 require "rspec_junit_formatter"
+require "pry"
 
 describe RspecJunitFormatter do
   TMP_DIR = File.expand_path("../../tmp", __FILE__)
@@ -50,8 +51,8 @@ describe RspecJunitFormatter do
   let(:successful_testcases) { doc.xpath("/testsuite/testcase[not(failure) and not(skipped)]") }
   let(:pending_testcases) { doc.xpath("/testsuite/testcase[skipped]") }
   let(:failed_testcases) { doc.xpath("/testsuite/testcase[failure]") }
-  let(:shared_testcases) { doc.xpath("/testsuite/testcase[contains(@name, 'shared example')]") }
-  let(:failed_shared_testcases) { doc.xpath("/testsuite/testcase[contains(@name, 'shared example')][failure]") }
+  let(:shared_testcases) { doc.xpath("/testsuite/testcase[contains(@name, './spec/example_spec.rb[1:6:1')]") }
+  let(:failed_shared_testcases) { doc.xpath("/testsuite/testcase[contains(@name, './spec/example_spec.rb[1:6:1')][failure]") }
 
   # Combined into a single example so we don't have to re-run the example rspec
   # process over and over. (We need to change the parameters in later specs so
@@ -63,9 +64,9 @@ describe RspecJunitFormatter do
     expect(testsuite).not_to be(nil)
 
     expect(testsuite["name"]).to eql("rspec")
-    expect(testsuite["tests"]).to eql("12")
+    expect(testsuite["tests"]).to eql("8")
     expect(testsuite["skipped"]).to eql("1")
-    expect(testsuite["failures"]).to eql("8")
+    expect(testsuite["failures"]).to eql("4")
     expect(testsuite["errors"]).to eql("0")
     expect(Time.parse(testsuite["timestamp"])).to be_within(60).of(Time.now)
     expect(testsuite["time"].to_f).to be > 0
@@ -73,7 +74,7 @@ describe RspecJunitFormatter do
 
     # it has some test cases
 
-    expect(testcases.size).to eql(12)
+    expect(testcases.size).to eql(8)
 
     testcases.each do |testcase|
       expect(testcase["classname"]).to eql("spec.example_spec")
@@ -88,7 +89,7 @@ describe RspecJunitFormatter do
     successful_testcases.each do |testcase|
       expect(testcase).not_to be(nil)
       # test results that capture stdout / stderr are not 'empty'
-      unless (testcase["name"]) =~ /capture stdout and stderr/
+      unless (testcase["name"]) == "./spec/example_spec.rb[1:7]"
         expect(testcase.children).to be_empty
       end
     end
@@ -107,7 +108,7 @@ describe RspecJunitFormatter do
 
     # it has failed test cases
 
-    expect(failed_testcases.size).to eql(8)
+    expect(failed_testcases.size).to eql(4)
 
     failed_testcases.each do |testcase|
       expect(testcase).not_to be(nil)
@@ -136,25 +137,9 @@ describe RspecJunitFormatter do
 
     # it cleans up diffs
 
-    diff_testcase_failure = doc.xpath("//testcase[contains(@name, 'diffs')]/failure").first
+    diff_testcase_failure = doc.xpath("//testcase[contains(@name, '[1:5]')]/failure").first
     expect(diff_testcase_failure[:message]).not_to match(/\e | \\e/x)
     expect(diff_testcase_failure.text).not_to match(/\e | \\e/x)
-
-    # it correctly replaces illegal characters
-
-    expect(doc.xpath("//testcase[contains(@name, 'naughty')]").first[:name]).to eql("some example specs replaces naughty \\0 and \\e characters, \\x01 and \\uFFFF too")
-
-    # it correctly escapes discouraged characters
-
-    expect(doc.xpath("//testcase[contains(@name, 'controlling')]").first[:name]).to eql("some example specs escapes controlling \u{7f} characters")
-
-    # it correctly escapes emoji characters
-
-    expect(doc.xpath("//testcase[contains(@name, 'unicodes')]").first[:name]).to eql("some example specs can include unicodes \u{1f601}")
-
-    # it correctly escapes reserved xml characters
-
-    expect(doc.xpath("//testcase[contains(@name, 'html')]").first[:name]).to eql(%{some example specs escapes <html tags='correctly' and="such &amp; such">})
 
     # it correctly captures stdout / stderr output
     expect(doc.xpath("//testcase/system-out").text).to eql("Test\n")

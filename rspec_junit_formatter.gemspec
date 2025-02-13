@@ -24,6 +24,7 @@ Gem::Specification.new do |s|
   s.add_development_dependency "nokogiri", "~> 1.8", ">= 1.8.2"
   s.add_development_dependency "rake"
   s.add_development_dependency "coderay"
+  s.add_development_dependency "pry"
 
   s.files        = Dir["lib/**/*", "README.md", "LICENSE"]
   s.require_path = "lib"

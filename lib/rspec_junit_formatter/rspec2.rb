@@ -36,6 +36,10 @@ private
     example.execution_result[:run_time]
   end
 
+  def id_for(example)
+    example.id
+  end
+
   def description_for(example)
     example.full_description
   end

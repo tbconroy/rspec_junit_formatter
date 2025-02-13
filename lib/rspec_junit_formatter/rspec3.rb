@@ -75,6 +75,10 @@ private
     notification.example.execution_result.run_time
   end
 
+  def id_for(notification)
+    notification.example.id
+  end
+
   def description_for(notification)
     notification.example.full_description
   end
